@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  db:
+    image: mysql:9.0
+    container_name: sharing-vision-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: sharing_vision
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+      MYSQL_SSL_MODE: DISABLED
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - sharing-vision-network
+
+  # Main Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - VITE_BACKEND_URL=/api
+    container_name: sharing-vision-app
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+      - "8001:8000"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=app_user
+      - DB_PASSWORD=app_password
+      - DB_NAME=sharing_vision
+      - DATABASE_URL=mysql://app_user:app_password@db:3306/sharing_vision
+    depends_on:
+      - db
+    networks:
+      - sharing-vision-network
+
+volumes:
+  mysql_data:
+
+networks:
+  sharing-vision-network:
+    driver: bridge
